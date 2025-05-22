@@ -1,0 +1,116 @@
+```{r}
+library(tidyverse)
+read_csv("mental_health_dataset.csv")
+```
+```{r}
+# Load required packages
+library(readr)
+library(dplyr)
+
+# Load the dataset
+data <- read_csv("mental_health_dataset.csv")
+
+# Select only numeric columns
+numeric_data <- data %>%
+  select(where(is.numeric))
+
+# Function to compute R² and p-value for each pair
+compute_r_squared <- function(x, y) {
+  model <- lm(y ~ x)
+  summary_model <- summary(model)
+  r_squared <- summary_model$r.squared
+  p_value <- coef(summary_model)[2, 4]  # p-value for the slope
+  return(c(R_squared = r_squared, p_value = p_value))
+}
+
+# Initialize result storage
+results <- data.frame(
+  Var1 = character(),
+  Var2 = character(),
+  R_squared = numeric(),
+  P_value = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Loop through pairs of numeric columns
+col_names <- colnames(numeric_data)
+for (i in 1:(length(col_names)-1)) {
+  for (j in (i+1):length(col_names)) {
+    x <- numeric_data[[i]]
+    y <- numeric_data[[j]]
+    metrics <- compute_r_squared(x, y)
+    results <- rbind(results, data.frame(
+      Var1 = col_names[i],
+      Var2 = col_names[j],
+      R_squared = round(metrics["R_squared"], 4),
+      P_value = round(metrics["p_value"], 4)
+    ))
+  }
+}
+
+# Print the result
+print(results)
+
+```
+
+```{r}
+# Load necessary libraries
+library(readr)
+library(ggplot2)
+
+# Load the dataset
+data <- read_csv("mental_health_dataset.csv")
+
+# Fit linear model
+model <- lm(productivity_score ~ depression_score, data = data)
+summary_model <- summary(model)
+
+# Extract R-squared
+r_squared <- summary_model$r.squared
+
+# Get 95% confidence interval for the slope
+conf_int <- confint(model, level = 0.95)
+
+# Print R-squared and confidence interval
+cat("R-squared:", round(r_squared, 4), "\n")
+cat("95% Confidence Interval for slope:\n")
+print(conf_int["depression_score", ])
+
+# Create scatter plot with regression line and confidence interval
+ggplot(data, aes(x = depression_score, y = productivity_score)) +
+  geom_point(color = "steelblue", alpha = 0.6) +
+  geom_smooth(method = "lm", se = TRUE, color = "darkred") +
+  labs(
+    title = "Depression Score vs. Productivity Score",
+    subtitle = paste("R² =", round(r_squared, 4)),
+    x = "Depression Score",
+    y = "Productivity Score"
+  ) +
+  theme_minimal()
+
+```
+
+```{r}
+# Fit the linear model
+model <- lm(productivity_score ~ depression_score, data = data)
+summary_model <- summary(model)
+
+# Extract R-squared and p-value
+r_squared <- summary_model$r.squared
+p_value <- summary_model$coefficients["depression_score", "Pr(>|t|)"]
+
+# Create the plot
+ggplot(data, aes(x = depression_score, y = productivity_score)) +
+  geom_jitter(width = 0.5, height = 0.3, color = "steelblue", alpha = 0.6) +
+  geom_smooth(method = "lm", se = TRUE, color = "darkred") +
+  labs(
+    title = "Depression Score vs. Productivity Score",
+    subtitle = paste0("R² = ", round(r_squared, 4),
+                      ", p = ", format.pval(p_value, digits = 3, eps = .001)),
+    x = "Depression Score",
+    y = "Productivity Score"
+  ) +
+  theme_minimal()
+
+```
+
